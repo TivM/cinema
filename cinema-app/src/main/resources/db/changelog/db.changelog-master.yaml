@@ -1,0 +1,7 @@
+databaseChangeLog:
+  - sqlFile:
+      path: db/changelog/001-init.sql
+      splitStatements: true
+      relativeToChangelogFile: true
+
+
