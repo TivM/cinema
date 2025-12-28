@@ -2,52 +2,69 @@ package com.reactive.cinema.infrastructure.persistence;
 
 import com.reactive.cinema.domain.model.Movie;
 import com.reactive.cinema.domain.model.MovieId;
+import com.reactive.cinema.domain.model.MovieType;
 import com.reactive.cinema.domain.model.PageRequest;
 import com.reactive.cinema.domain.port.MoviePort;
-import com.reactive.cinema.infrastructure.persistence.jpa.MovieEntity;
-import com.reactive.cinema.infrastructure.persistence.jpa.MovieRepository;
+import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
+
+import java.time.Instant;
+import java.util.UUID;
 
 @Repository
 public class PostgresMovieAdapter implements MoviePort {
-    private final MovieRepository repo;
+    private final DatabaseClient db;
 
-    public PostgresMovieAdapter(MovieRepository repo) {
-        this.repo = repo;
+    public PostgresMovieAdapter(DatabaseClient db) {
+        this.db = db;
     }
 
     @Override
     public Mono<Movie> findById(MovieId id) {
-        return Mono.fromCallable(() -> repo.findById(id.value()))
-                .subscribeOn(Schedulers.boundedElastic())
-                .flatMap(opt -> opt.map(e -> Mono.just(toDomain(e))).orElseGet(Mono::empty));
+        return db.sql("""
+                        select id, title, type, description, created_at
+                        from movies
+                        where id = :id
+                        """)
+                .bind("id", id.value())
+                .map((row, meta) -> new Movie(
+                        MovieId.of(row.get("id", UUID.class)),
+                        row.get("title", String.class),
+                        MovieType.valueOf(row.get("type", String.class)),
+                        row.get("description", String.class),
+                        row.get("created_at", Instant.class)
+                ))
+                .one();
     }
 
     @Override
     public Flux<Movie> findPage(PageRequest page) {
-        return Mono.fromCallable(() -> repo.findAll(org.springframework.data.domain.PageRequest.of(page.page(), page.size())))
-                .subscribeOn(Schedulers.boundedElastic())
-                .flatMapMany(result -> Flux.fromIterable(result.getContent()))
-                .map(this::toDomain);
+        return db.sql("""
+                        select id, title, type, description, created_at
+                        from movies
+                        order by created_at desc
+                        limit :limit offset :offset
+                        """)
+                .bind("limit", page.size())
+                .bind("offset", page.offset())
+                .map((row, meta) -> new Movie(
+                        MovieId.of(row.get("id", UUID.class)),
+                        row.get("title", String.class),
+                        MovieType.valueOf(row.get("type", String.class)),
+                        row.get("description", String.class),
+                        row.get("created_at", Instant.class)
+                ))
+                .all();
     }
 
     @Override
     public Mono<Long> countAll() {
-        return Mono.fromCallable(repo::count)
-                .subscribeOn(Schedulers.boundedElastic());
-    }
-
-    private Movie toDomain(MovieEntity e) {
-        return new Movie(
-                MovieId.of(e.getId()),
-                e.getTitle(),
-                e.getTypeEnum(),
-                e.getDescription(),
-                e.getCreatedAt()
-        );
+        return db.sql("select count(*) as c from movies")
+                .map((row, meta) -> row.get("c", Long.class))
+                .one()
+                .defaultIfEmpty(0L);
     }
 }
 
