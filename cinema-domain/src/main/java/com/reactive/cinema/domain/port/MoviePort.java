@@ -12,6 +12,8 @@ public interface MoviePort {
     Flux<Movie> findPage(PageRequest page);
 
     Mono<Long> countAll();
+
+    Mono<Movie> create(Movie movie);
 }
 
 

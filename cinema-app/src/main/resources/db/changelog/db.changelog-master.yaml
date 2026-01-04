@@ -1,7 +1,9 @@
 databaseChangeLog:
-  - sqlFile:
-      path: db/changelog/001-init.sql
-      splitStatements: true
-      relativeToChangelogFile: true
-
-
+  - changeSet:
+      id: 001-init
+      author: system
+      changes:
+        - sqlFile:
+            path: 001-init.sql
+            splitStatements: true
+            relativeToChangelogFile: true

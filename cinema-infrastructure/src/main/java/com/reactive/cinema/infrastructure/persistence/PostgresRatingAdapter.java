@@ -36,13 +36,18 @@ public class PostgresRatingAdapter implements RatingPort {
     @Override
     public Mono<BigDecimal> getAverageRating(MovieId movieId) {
         return db.sql("""
-                        select avg(rating)::numeric(10,2) as avg_rating
-                        from user_ratings
-                        where movie_id = :movieId
+                        SELECT COALESCE(AVG(rating)::numeric(10,2), 0) as avg_rating
+                        FROM user_ratings
+                        WHERE movie_id = :movieId
                         """)
                 .bind("movieId", movieId.value())
-                .map((row, meta) -> row.get("avg_rating", BigDecimal.class))
-                .one();
+                .fetch()
+                .one()
+                .map(row -> {
+                    Object value = row.get("avg_rating");
+                    return value == null ? BigDecimal.ZERO : new BigDecimal(value.toString());
+                })
+                .defaultIfEmpty(BigDecimal.ZERO);
     }
 
     @Override
@@ -75,5 +80,3 @@ public class PostgresRatingAdapter implements RatingPort {
                 .all();
     }
 }
-
-

@@ -10,6 +10,9 @@ import com.reactive.cinema.application.service.RatingService;
 import com.reactive.cinema.domain.model.MovieId;
 import com.reactive.cinema.domain.model.Rating;
 import com.reactive.cinema.domain.model.UserId;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
@@ -29,6 +32,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/users/{userId}")
+@Tag(name = "Ratings", description = "API для работы с рейтингами фильмов")
 public class RatingController {
     private final RatingService ratings;
     private final NotificationHub hub;
@@ -40,30 +44,32 @@ public class RatingController {
 
     @PutMapping("/ratings/{movieId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Оценить фильм", description = "Устанавливает или обновляет рейтинг фильма от пользователя")
     public Mono<Void> rate(
-            @PathVariable UUID userId,
-            @PathVariable UUID movieId,
+            @Parameter(description = "ID пользователя") @PathVariable UUID userId,
+            @Parameter(description = "ID фильма") @PathVariable UUID movieId,
             @RequestBody RateRequest request
     ) {
         return ratings.rate(UserId.of(userId), MovieId.of(movieId), Rating.of(request.value()));
     }
 
     @GetMapping("/top10")
-    public Flux<MovieCardDto> top10(@PathVariable UUID userId) {
+    @Operation(summary = "Получить топ-10 фильмов", description = "Возвращает топ-10 фильмов для пользователя на основе его рейтингов")
+    public Flux<MovieCardDto> top10(
+            @Parameter(description = "ID пользователя") @PathVariable UUID userId) {
         return ratings.top10(UserId.of(userId)).map(DtoMapper::toDto);
     }
 
-    /**
-     * Реактивный стрим топ-10: при каждом событии рейтинга для пользователя отдаём обновлённый список.
-     */
     @GetMapping(value = "/top10/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<ServerSentEvent<List<MovieCardDto>>> top10Stream(@PathVariable UUID userId) {
+    @Operation(summary = "Стрим топ-10 фильмов", description = "Server-Sent Events стрим, который отправляет обновления топ-10 при изменении рейтингов")
+    public Flux<ServerSentEvent<List<MovieCardDto>>> top10Stream(
+            @Parameter(description = "ID пользователя") @PathVariable UUID userId) {
         UserId uid = UserId.of(userId);
 
         Flux<List<MovieCardDto>> updates = hub.stream()
                 .filter(ev -> ev.type() == NotificationType.RATING_CHANGED && ev.userId() != null && ev.userId().equals(uid))
                 .startWith(new NotificationEvent(
-                        NotificationType.TOP10_UPDATED,
+                        NotificationType.RATING_CHANGED,
                         "initial",
                         Instant.now(),
                         uid,
@@ -76,7 +82,7 @@ public class RatingController {
                 );
 
         return updates.map(list ->
-                ServerSentEvent.<List<MovieCardDto>>builder(list)
+                ServerSentEvent.builder(list)
                         .event("top10")
                         .id(Instant.now().toString())
                         .build()

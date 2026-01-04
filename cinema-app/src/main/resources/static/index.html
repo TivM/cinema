@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Онлайн-кинотеатр</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .user-settings {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .user-settings label {
+            font-weight: 500;
+            color: #555;
+        }
+
+        .user-settings input {
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .user-settings button {
+            padding: 8px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.3s;
+        }
+
+        .user-settings button:hover {
+            background: #5568d3;
+        }
+
+        .notifications {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .notifications h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .notification-item {
+            padding: 10px;
+            margin-bottom: 8px;
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            border-radius: 4px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .notification-item.new-movie {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .catalog {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .catalog-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .catalog-header h2 {
+            color: #333;
+        }
+
+        .pagination {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .pagination button {
+            padding: 8px 15px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .pagination button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .pagination button:hover:not(:disabled) {
+            background: #5568d3;
+        }
+
+        .movies-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .movie-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+
+        .movie-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .movie-card h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .movie-card .type {
+            display: inline-block;
+            padding: 4px 8px;
+            background: #667eea;
+            color: white;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+
+        .movie-card .description {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+
+        .movie-card .rating {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .movie-card .avg-rating {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .movie-card .user-rating {
+            padding: 4px 8px;
+            background: #28a745;
+            color: white;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .rating-input {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        .rating-input input {
+            width: 60px;
+            padding: 5px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .rating-input button {
+            padding: 5px 15px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .rating-input button:hover {
+            background: #218838;
+        }
+
+        .top10-section {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .top10-section h2 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .top10-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .top10-item {
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎬 Онлайн-кинотеатр</h1>
+            <div class="user-settings">
+                <label for="userId">ID пользователя:</label>
+                <input type="text" id="userId" placeholder="Введите UUID пользователя" value="">
+                <button onclick="setUserId()">Установить</button>
+            </div>
+        </div>
+
+        <div class="notifications">
+            <h2>🔔 Уведомления</h2>
+            <div id="notificationsList"></div>
+        </div>
+
+        <div class="catalog">
+            <div class="catalog-header">
+                <h2>📽️ Каталог фильмов</h2>
+                <div class="pagination">
+                    <button id="prevPage" onclick="changePage(-1)">← Назад</button>
+                    <span id="pageInfo">Страница 0</span>
+                    <button id="nextPage" onclick="changePage(1)">Вперед →</button>
+                </div>
+            </div>
+            <div id="moviesGrid" class="movies-grid">
+                <div class="loading">Загрузка...</div>
+            </div>
+        </div>
+
+        <div class="top10-section">
+            <h2>⭐ Топ-10 фильмов</h2>
+            <div id="top10List" class="top10-list">
+                <div class="loading">Выберите пользователя для просмотра топ-10</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+        let currentUserId = null;
+        let currentPage = 0;
+        let totalPages = 0;
+        let eventSource = null;
+        let top10EventSource = null;
+
+        function setUserId() {
+            const input = document.getElementById('userId');
+            const userId = input.value.trim();
+            
+            if (userId && isValidUUID(userId)) {
+                currentUserId = userId;
+                loadCatalog();
+                connectTop10Stream();
+            } else {
+                alert('Пожалуйста, введите корректный UUID');
+            }
+        }
+
+        function isValidUUID(str) {
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            return uuidRegex.test(str);
+        }
+
+        function connectNotifications() {
+            if (eventSource) {
+                eventSource.close();
+            }
+
+            eventSource = new EventSource(`${API_BASE}/notifications`);
+
+            eventSource.addEventListener('NEW_MOVIE_ADDED', (event) => {
+                const data = JSON.parse(event.data);
+                if (data.message && data.message.includes('Новый фильм добавлен')) {
+                    addNotification(data.message, 'new-movie');
+                    loadCatalog();
+                }
+            });
+
+            eventSource.addEventListener('RATING_CHANGED', (event) => {
+                const data = JSON.parse(event.data);
+                if (currentUserId && data.userId === currentUserId) {
+                    addNotification(data.message, 'info');
+                    loadCatalog();
+                }
+            });
+
+            eventSource.onerror = (error) => {
+                console.error('Ошибка подключения к уведомлениям:', error);
+            };
+        }
+
+        function connectTop10Stream() {
+            if (!currentUserId) return;
+
+            if (top10EventSource) {
+                top10EventSource.close();
+            }
+
+            top10EventSource = new EventSource(`${API_BASE}/users/${currentUserId}/top10/stream`);
+
+            top10EventSource.addEventListener('top10', (event) => {
+                const data = JSON.parse(event.data);
+                displayTop10(data);
+            });
+
+            top10EventSource.onerror = (error) => {
+                console.error('Ошибка подключения к стриму топ-10:', error);
+            };
+        }
+
+        function addNotification(message, type = 'info') {
+            const list = document.getElementById('notificationsList');
+            const item = document.createElement('div');
+            item.className = `notification-item ${type}`;
+            item.textContent = message;
+            list.insertBefore(item, list.firstChild);
+
+            while (list.children.length > 10) {
+                list.removeChild(list.lastChild);
+            }
+        }
+
+        async function loadCatalog() {
+            try {
+                const url = `${API_BASE}/movies?page=${currentPage}&size=20${currentUserId ? '&userId=' + currentUserId : ''}`;
+                const response = await fetch(url);
+                const data = await response.json();
+
+                totalPages = Math.ceil(data.total / 20);
+                displayMovies(data.items);
+                updatePagination();
+            } catch (error) {
+                console.error('Ошибка загрузки каталога:', error);
+                document.getElementById('moviesGrid').innerHTML = '<div class="error">Ошибка загрузки каталога</div>';
+            }
+        }
+
+        function displayMovies(movies) {
+            const grid = document.getElementById('moviesGrid');
+            
+            if (movies.length === 0) {
+                grid.innerHTML = '<div class="loading">Фильмы не найдены</div>';
+                return;
+            }
+
+            grid.innerHTML = movies.map(movie => `
+                <div class="movie-card">
+                    <h3>${escapeHtml(movie.movie.title)}</h3>
+                    <span class="type">${movie.movie.type}</span>
+                    <div class="description">${escapeHtml(movie.movie.description)}</div>
+                    <div class="rating">
+                        <span class="avg-rating">⭐ ${movie.avgRating ? movie.avgRating.toFixed(1) : '0.0'}</span>
+                        ${movie.userRating ? `<span class="user-rating">Ваша оценка: ${movie.userRating}</span>` : ''}
+                    </div>
+                    ${currentUserId ? `
+                        <div class="rating-input">
+                            <input type="number" id="rating-${movie.movie.id}" min="1" max="10" placeholder="1-10">
+                            <button onclick="rateMovie('${movie.movie.id}')">Оценить</button>
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+        }
+
+        async function rateMovie(movieId) {
+            if (!currentUserId) {
+                alert('Сначала установите ID пользователя');
+                return;
+            }
+
+            const input = document.getElementById(`rating-${movieId}`);
+            const rating = parseInt(input.value);
+
+            if (rating < 1 || rating > 10) {
+                alert('Рейтинг должен быть от 1 до 10');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/users/${currentUserId}/ratings/${movieId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ value: rating })
+                });
+
+                if (response.ok) {
+                    loadCatalog();
+                } else {
+                    alert('Ошибка при оценке фильма');
+                }
+            } catch (error) {
+                console.error('Ошибка оценки фильма:', error);
+                alert('Ошибка при оценке фильма');
+            }
+        }
+
+        function displayTop10(movies) {
+            const list = document.getElementById('top10List');
+
+            if (movies.length === 0) {
+                list.innerHTML = '<div class="loading">Топ-10 пуст. Оцените фильмы, чтобы увидеть свой топ-10!</div>';
+                return;
+            }
+
+            list.innerHTML = movies.map((movie, index) => `
+                <div class="top10-item">
+                    <div>
+                        <strong>${index + 1}. ${escapeHtml(movie.movie.title)}</strong>
+                        <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                            ⭐ ${movie.avgRating ? movie.avgRating.toFixed(1) : '0.0'} 
+                            ${movie.userRating ? `| Ваша оценка: ${movie.userRating}` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function changePage(delta) {
+            const newPage = currentPage + delta;
+            if (newPage >= 0 && newPage < totalPages) {
+                currentPage = newPage;
+                loadCatalog();
+            }
+        }
+
+        function updatePagination() {
+            document.getElementById('pageInfo').textContent = `Страница ${currentPage + 1} из ${totalPages || 1}`;
+            document.getElementById('prevPage').disabled = currentPage === 0;
+            document.getElementById('nextPage').disabled = currentPage >= totalPages - 1;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        window.onload = () => {
+            connectNotifications();
+            loadCatalog();
+        };
+
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0;
+                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        document.getElementById('userId').value = generateUUID();
+    </script>
+</body>
+</html>
+

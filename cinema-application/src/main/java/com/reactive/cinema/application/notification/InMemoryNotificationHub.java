@@ -4,8 +4,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 
 public class InMemoryNotificationHub implements NotificationHub {
-    private final Sinks.Many<NotificationEvent> sink =
-            Sinks.many().multicast().onBackpressureBuffer();
+    private final Sinks.Many<NotificationEvent> sink = Sinks.many().replay().limit(10);
 
     @Override
     public Flux<NotificationEvent> stream() {
